@@ -2,6 +2,8 @@
 
 A clean, modern dashboard for viewing and analyzing Stripe transactions without needing access to the Stripe dashboard.
 
+![1743477927451](image/README/1743477927451.png)
+
 ## Features
 
 - **All-in-one dashboard** - View charges, payouts, refunds, and all transaction types in a single interface
@@ -23,22 +25,26 @@ A clean, modern dashboard for viewing and analyzing Stripe transactions without 
 ### Setup
 
 1. Clone the repository or download the files
+
 ```bash
 git clone https://github.com/yourusername/stripe-transactions-dashboard.git
 cd stripe-transactions-dashboard
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 ```
 
 3. Create a `.env` file in the root directory and add your Stripe API key
+
 ```
 STRIPE_SECRET_KEY=sk_test_yourApiKeyHere
 ```
 
 4. Start the server
+
 ```bash
 node server.js
 ```
