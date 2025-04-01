@@ -5,15 +5,15 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5555;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.static('public'));
 app.use(express.json());
 
 // Use the direct Stripe key
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-console.log('Using Stripe secret key:', STRIPE_SECRET_KEY);
+const STRIPE_SECRET_KEY = 'sk_test_51K2Fy2C4fLRBbEt4SkCyjGyKqGXHLkWMzB2dSB8XYDpRVf9ktyXnXyXFNpJMaByTe8oZ8HtvitQdJKDyvzKHnrxG00gpNmrIW6';
+console.log('Using provided Stripe secret key: Key is present');
 
 // Initialize Stripe with your secret key
 let stripeInstance = null;
@@ -44,7 +44,6 @@ app.get('/api/customer/:customerId', async (req, res) => {
     }
 
     const customer = await stripeInstance.customers.retrieve(customerId);
-    console.log("🚀 ~ app.get ~ customer:", customer)
     res.json(customer);
   } catch (error) {
     console.error('Error fetching customer:', error);
@@ -67,13 +66,18 @@ app.get('/api/transactions', async (req, res) => {
     let balanceTransactionsData = [];
 
     try {
-      // Get payments (charges)
+      // Get payments (charges) - include all statuses
       const charges = await stripeInstance.charges.list({
-        limit: 50, // Increased limit
+        limit: 100, // Increased limit further
         expand: ['data.customer'] // Expand customer info to get email
       });
       chargesData = charges.data;
       console.log(`Fetched ${chargesData.length} charges`);
+
+      // Log the first charge's customer structure if available
+      if (chargesData.length > 0 && chargesData[0].customer) {
+        console.log("Sample customer structure:", JSON.stringify(chargesData[0].customer, null, 2));
+      }
     } catch (chargeError) {
       console.error('Error fetching charges:', chargeError);
     }
@@ -90,23 +94,22 @@ app.get('/api/transactions', async (req, res) => {
     }
 
     try {
-      // Get balance transactions
+      // Get balance transactions of all types
       const balanceTransactions = await stripeInstance.balanceTransactions.list({
-        limit: 100, // Increased limit
+        limit: 200, // Significantly increased limit to get more transactions
         expand: ['data.source'] // Try to expand source data when possible
       });
       balanceTransactionsData = balanceTransactions.data;
       console.log(`Fetched ${balanceTransactionsData.length} balance transactions`);
+
+      // Log the first transaction's structure if available
+      if (balanceTransactionsData.length > 0) {
+        console.log("Sample transaction type:", balanceTransactionsData[0].type);
+        console.log("Sample transaction status:", balanceTransactionsData[0].status);
+      }
     } catch (balanceError) {
       console.error('Error fetching balance transactions:', balanceError);
     }
-    console.log(`🚀 ~ app.get ~ {
-      charges: chargesData,
-      payouts: payoutsData,
-      balanceTransactions: balanceTransactionsData
-    }:`, {
-      charges: chargesData[0].customer,
-    })
 
     res.json({
       charges: chargesData,

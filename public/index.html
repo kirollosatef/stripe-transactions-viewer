@@ -231,15 +231,54 @@
           const amount = (transaction.amount / 100).toFixed(2);
           const currency = transaction.currency.toUpperCase();
 
+          // Add classes for all transaction types
           let typeClass = "secondary";
           if (transaction.type === "charge") typeClass = "success";
           if (transaction.type === "payout") typeClass = "primary";
           if (transaction.type === "refund") typeClass = "warning";
+          if (transaction.type === "payment_refund") typeClass = "warning";
+          if (transaction.type === "payment") typeClass = "info";
+          if (transaction.type === "adjustment") typeClass = "dark";
+          if (transaction.type === "dispute") typeClass = "danger";
+          if (transaction.type === "reserve_transaction") typeClass = "light";
+          if (transaction.type === "transfer") typeClass = "info";
+
+          // Get status class
+          let statusClass = "secondary";
+          if (transaction.status === "available") statusClass = "success";
+          if (transaction.status === "pending") statusClass = "warning";
+          if (transaction.status === "canceled") statusClass = "danger";
 
           // Check for source information that might contain email
           let customerInfo = "";
+          let customerEmail = "";
+
+          // Try to extract customer email from various places
           if (transaction.source) {
-            customerInfo = `<strong>Customer:</strong> ${transaction.source[0]}<br>`;
+            if (typeof transaction.source === "object") {
+              // If source is expanded object
+              if (
+                transaction.source.customer &&
+                transaction.source.customer.customer &&
+                transaction.source.customer.customer.email
+              ) {
+                customerEmail = transaction.source.customer.customer.email;
+              } else if (transaction.source.customer && transaction.source.customer.email) {
+                customerEmail = transaction.source.customer.email;
+              } else if (transaction.source.receipt_email) {
+                customerEmail = transaction.source.receipt_email;
+              } else if (transaction.source.email) {
+                customerEmail = transaction.source.email;
+              }
+            } else if (typeof transaction.source === "string" && transaction.source.indexOf("@") > -1) {
+              // If source is string with email
+              customerEmail = transaction.source;
+            }
+          }
+
+          // If we found an email
+          if (customerEmail) {
+            customerInfo = `<strong>Customer:</strong> ${customerEmail}<br>`;
           }
 
           return `
@@ -252,7 +291,7 @@
                 </h5>
                 <h6 class="card-subtitle mb-2 text-muted">ID: ${transaction.id}</h6>
                 <p class="card-text">
-                  <strong>Status:</strong> ${transaction.status}<br>
+                  <strong>Status:</strong> <span class="badge bg-${statusClass}">${transaction.status}</span><br>
                   ${customerInfo}
                   <strong>Description:</strong> ${transaction.description || "N/A"}<br>
                   <strong>Available on:</strong> ${new Date(
@@ -291,20 +330,47 @@
           const amount = (charge.amount / 100).toFixed(2);
           const currency = charge.currency.toUpperCase();
 
+          // Enhanced status class handling to include all possible statuses
           let statusClass = "secondary";
           if (charge.status === "succeeded") statusClass = "success";
           if (charge.status === "failed") statusClass = "danger";
           if (charge.status === "pending") statusClass = "warning";
+          if (charge.status === "canceled") statusClass = "danger";
+          if (charge.status === "on_hold") statusClass = "warning";
+          if (charge.status === "refunded") statusClass = "info";
+          if (charge.status === "partially_refunded") statusClass = "info";
+          if (charge.status === "disputed") statusClass = "danger";
 
           // Customer information
           let customerInfo = "";
           let customerEmail = "Unknown";
 
           if (charge.customer) {
-            if (typeof charge.customer === "object" && charge.customer.email) {
+            // Try different paths to find the customer email
+            if (charge.customer.customer && charge.customer.customer.email) {
+              // Path from your data structure: charge.customer.customer.email
+              customerEmail = charge.customer.customer.email;
+            } else if (typeof charge.customer === "object" && charge.customer.email) {
+              // Standard path: charge.customer.email
               customerEmail = charge.customer.email;
             } else if (typeof charge.customer === "string") {
+              // If we just have a customer ID
               customerEmail = "Loading..."; // Will be fetched later
+            }
+          }
+
+          // Add receipt email if available
+          if (charge.receipt_email && customerEmail === "Unknown") {
+            customerEmail = charge.receipt_email;
+          }
+
+          // Add payment method details
+          let paymentMethodDetails = "N/A";
+          if (charge.payment_method_details) {
+            paymentMethodDetails = charge.payment_method_details.type || "N/A";
+            if (charge.payment_method_details.card) {
+              const card = charge.payment_method_details.card;
+              paymentMethodDetails = `${card.brand} •••• ${card.last4}`;
             }
           }
 
@@ -320,7 +386,7 @@
                 </h5>
                 <h6 class="card-subtitle mb-2 text-muted">ID: ${charge.id}</h6>
                 <p class="card-text">
-                  <strong>Payment Method:</strong> ${charge.payment_method_details?.type || "N/A"}<br>
+                  <strong>Payment Method:</strong> ${paymentMethodDetails}<br>
                   <strong>Description:</strong> ${charge.description || "N/A"}<br>
                   <div class="${customerEmail === "Unknown" ? "d-none" : ""}">
                     <strong>Customer Email:</strong> <span class="customer-email">${customerEmail}</span><br>
