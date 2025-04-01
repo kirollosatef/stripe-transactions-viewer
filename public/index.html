@@ -4,159 +4,501 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stripe Transactions Viewer</title>
+    <title>Stripe Transactions Dashboard</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-      .transaction-card {
-        margin-bottom: 15px;
-        transition: all 0.3s ease;
+      :root {
+        --primary-color: #635bff;
+        --secondary-color: #0a2540;
+        --accent-color: #00d4ff;
+        --light-gray: #f6f9fc;
+        --dark-gray: #425466;
       }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+          "Open Sans", "Helvetica Neue", sans-serif;
+        background-color: var(--light-gray);
+        color: var(--secondary-color);
+        line-height: 1.5;
+      }
+
+      .navbar {
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar-brand {
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+
+      .dashboard {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
+
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .dashboard-title {
+        font-weight: 700;
+        color: var(--secondary-color);
+        margin: 0;
+      }
+
+      .filter-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .filter-button {
+        border-radius: 20px;
+        background-color: white;
+        color: var(--dark-gray);
+        border: 1px solid #e0e0e0;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .filter-button:hover {
+        background-color: #f0f0f0;
+      }
+
+      .filter-button.active {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .transactions-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .transaction-card {
+        background-color: white;
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        height: 100%;
+      }
+
       .transaction-card:hover {
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
       }
-      .tab-content {
-        padding: 20px 0;
+
+      .card-body {
+        padding: 1.5rem;
       }
-      .loading {
-        text-align: center;
-        padding: 50px;
+
+      .card-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--secondary-color);
       }
+
+      .card-subtitle {
+        font-size: 0.9rem;
+        color: var(--dark-gray);
+        margin-bottom: 1rem;
+      }
+
+      .transaction-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .transaction-currency {
+        font-size: 0.9rem;
+        color: var(--dark-gray);
+      }
+
+      .badge {
+        padding: 0.5em 0.8em;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        text-transform: capitalize;
+      }
+
+      .badge-pill {
+        border-radius: 20px;
+      }
+
+      .card-text {
+        font-size: 0.95rem;
+        color: var(--dark-gray);
+        margin-bottom: 1rem;
+      }
+
+      .card-text strong {
+        color: var(--secondary-color);
+        font-weight: 600;
+      }
+
+      .info-row {
+        display: flex;
+        margin-bottom: 0.5rem;
+      }
+
+      .info-label {
+        flex: 0 0 120px;
+        font-weight: 600;
+        color: var(--secondary-color);
+      }
+
+      .info-value {
+        flex: 1;
+        color: var(--dark-gray);
+      }
+
       .timestamp {
         font-size: 0.8rem;
-        color: #6c757d;
+        color: var(--dark-gray);
+        border-top: 1px solid #f0f0f0;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
       }
-      .badge {
-        margin-left: 5px;
+
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem 0;
       }
+
+      .spinner-border {
+        color: var(--primary-color);
+        width: 3rem;
+        height: 3rem;
+      }
+
+      .loading-text {
+        margin-top: 1rem;
+        color: var(--dark-gray);
+        font-weight: 500;
+      }
+
       .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem 0;
+        color: var(--dark-gray);
         text-align: center;
-        padding: 50px;
-        color: #6c757d;
+      }
+
+      .empty-icon {
+        color: #d1d5db;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .refresh-btn {
+        background-color: var(--primary-color);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+      }
+
+      .refresh-btn:hover {
+        background-color: #524ecc;
+      }
+
+      .refresh-btn:active {
+        transform: scale(0.98);
+      }
+
+      .refresh-btn i {
+        font-size: 0.9rem;
+      }
+
+      .search-container {
+        position: relative;
+        max-width: 300px;
+      }
+
+      .search-input {
+        border-radius: 20px;
+        padding-left: 2.5rem;
+        border: 1px solid #e0e0e0;
+        width: 100%;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--dark-gray);
+      }
+
+      .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background-color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      }
+
+      .stat-title {
+        font-size: 0.9rem;
+        color: var(--dark-gray);
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--secondary-color);
+      }
+
+      .stat-icon {
+        float: right;
+        background-color: var(--light-gray);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-color);
+      }
+
+      .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 2.5rem;
+      }
+
+      .pagination {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .page-item {
+        margin: 0 0.25rem;
+      }
+
+      .page-link {
+        border-radius: 4px;
+        color: var(--secondary-color);
+        border: 1px solid #e0e0e0;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+      }
+
+      .page-link:hover {
+        background-color: var(--light-gray);
+      }
+
+      .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      @media (max-width: 768px) {
+        .transactions-container {
+          grid-template-columns: 1fr;
+        }
+
+        .dashboard-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .search-container {
+          max-width: 100%;
+          width: 100%;
+        }
+
+        .filter-controls {
+          width: 100%;
+          overflow-x: auto;
+          padding-bottom: 0.5rem;
+          flex-wrap: nowrap;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="container my-5">
-      <h1 class="mb-4">Stripe Transactions Viewer</h1>
+    <nav class="navbar navbar-expand-lg navbar-light">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-bolt me-2"></i>
+          Stripe Transactions Dashboard
+        </a>
+      </div>
+    </nav>
 
-      <ul class="nav nav-tabs" id="transactionTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button
-            class="nav-link active"
-            id="balance-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#balance"
-            type="button"
-            role="tab"
-            aria-controls="balance"
-            aria-selected="true"
-          >
-            Balance Transactions
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button
-            class="nav-link"
-            id="charges-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#charges"
-            type="button"
-            role="tab"
-            aria-controls="charges"
-            aria-selected="false"
-          >
-            Charges
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button
-            class="nav-link"
-            id="payouts-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#payouts"
-            type="button"
-            role="tab"
-            aria-controls="payouts"
-            aria-selected="false"
-          >
-            Payouts
-          </button>
-        </li>
-      </ul>
+    <div class="dashboard">
+      <div class="dashboard-header">
+        <h1 class="dashboard-title">Transaction Overview</h1>
 
-      <div class="tab-content" id="transactionTabsContent">
-        <div class="tab-pane fade show active" id="balance" role="tabpanel" aria-labelledby="balance-tab">
-          <div id="balanceTransactions">
-            <div class="loading">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              <p class="mt-2">Loading transactions...</p>
-            </div>
+        <div class="d-flex gap-3">
+          <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              id="searchInput"
+              class="form-control search-input"
+              placeholder="Search transactions..."
+            />
           </div>
-        </div>
 
-        <div class="tab-pane fade" id="charges" role="tabpanel" aria-labelledby="charges-tab">
-          <div id="chargesTransactions">
-            <div class="loading">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              <p class="mt-2">Loading charges...</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-pane fade" id="payouts" role="tabpanel" aria-labelledby="payouts-tab">
-          <div id="payoutsTransactions">
-            <div class="loading">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              <p class="mt-2">Loading payouts...</p>
-            </div>
-          </div>
+          <button id="refreshBtn" class="btn refresh-btn">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+          </button>
         </div>
       </div>
 
-      <div class="d-flex justify-content-center mt-4">
-        <button id="refreshBtn" class="btn btn-primary">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            class="bi bi-arrow-clockwise"
-            viewBox="0 0 16 16"
-          >
-            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
-            <path
-              d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"
-            />
-          </svg>
-          Refresh Data
-        </button>
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-credit-card"></i>
+          </div>
+          <div class="stat-title">Total Charges</div>
+          <div class="stat-value" id="totalCharges">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="stat-title">Total Payouts</div>
+          <div class="stat-value" id="totalPayouts">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-exchange-alt"></i>
+          </div>
+          <div class="stat-title">Total Transactions</div>
+          <div class="stat-value" id="totalTransactions">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-title">Unique Customers</div>
+          <div class="stat-value" id="uniqueCustomers">-</div>
+        </div>
+      </div>
+
+      <div class="filter-controls">
+        <button class="filter-button active" data-filter="all">All Transactions</button>
+        <button class="filter-button" data-filter="charge">Charges</button>
+        <button class="filter-button" data-filter="payout">Payouts</button>
+        <button class="filter-button" data-filter="refund">Refunds</button>
+        <button class="filter-button" data-filter="payment">Payments</button>
+        <button class="filter-button" data-filter="succeeded">Succeeded</button>
+        <button class="filter-button" data-filter="pending">Pending</button>
+        <button class="filter-button" data-filter="failed">Failed</button>
+      </div>
+
+      <div id="transactions">
+        <div class="loading-container">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="loading-text">Loading transactions...</p>
+        </div>
+      </div>
+
+      <div class="pagination-container d-none">
+        <ul class="pagination" id="pagination">
+          <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+          <li class="page-item active"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item">
+            <a class="page-link" href="#">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // Initialize variables
+        let allTransactions = [];
+        let filteredTransactions = [];
+        let currentPage = 1;
+        const itemsPerPage = 12;
+
+        // DOM elements
+        const transactionsContainer = document.getElementById("transactions");
+        const searchInput = document.getElementById("searchInput");
+        const refreshBtn = document.getElementById("refreshBtn");
+        const filterButtons = document.querySelectorAll(".filter-button");
+        const paginationContainer = document.querySelector(".pagination-container");
+        const pagination = document.getElementById("pagination");
+
+        // Stats elements
+        const totalChargesEl = document.getElementById("totalCharges");
+        const totalPayoutsEl = document.getElementById("totalPayouts");
+        const totalTransactionsEl = document.getElementById("totalTransactions");
+        const uniqueCustomersEl = document.getElementById("uniqueCustomers");
+
         // Load transactions on page load
         loadTransactions();
 
-        // Refresh button click handler
-        document.getElementById("refreshBtn").addEventListener("click", loadTransactions);
+        // Event listeners
+        refreshBtn.addEventListener("click", loadTransactions);
+        searchInput.addEventListener("input", handleSearch);
+
+        filterButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            filterButtons.forEach((btn) => btn.classList.remove("active"));
+            this.classList.add("active");
+            filterTransactions(this.dataset.filter);
+          });
+        });
 
         function loadTransactions() {
-          // Reset loading states
-          document.getElementById("balanceTransactions").innerHTML =
-            createLoadingHTML("Loading transactions...");
-          document.getElementById("chargesTransactions").innerHTML = createLoadingHTML("Loading charges...");
-          document.getElementById("payoutsTransactions").innerHTML = createLoadingHTML("Loading payouts...");
+          // Reset and show loading state
+          transactionsContainer.innerHTML = createLoadingHTML("Loading transactions...");
 
           // Fetch transaction data from our API
           fetch("/api/transactions")
@@ -167,7 +509,38 @@
               return response.json();
             })
             .then((data) => {
-              displayTransactions(data);
+              // Combine all transaction types into a single array
+              const charges = data.charges.map((item) => ({
+                ...item,
+                transactionType: "charge",
+                displayAmount: item.amount / 100,
+                displayDate: new Date(item.created * 1000),
+              }));
+
+              const payouts = data.payouts.map((item) => ({
+                ...item,
+                transactionType: "payout",
+                displayAmount: item.amount / 100,
+                displayDate: new Date(item.created * 1000),
+              }));
+
+              const balanceTransactions = data.balanceTransactions.map((item) => ({
+                ...item,
+                transactionType: "balance",
+                displayAmount: item.amount / 100,
+                displayDate: new Date(item.created * 1000),
+              }));
+
+              allTransactions = [...charges, ...payouts, ...balanceTransactions];
+
+              // Sort by date (newest first)
+              allTransactions.sort((a, b) => b.created - a.created);
+
+              // Update stats
+              updateStats(allTransactions, charges, payouts);
+
+              // Apply initial filter (all)
+              filterTransactions("all");
             })
             .catch((error) => {
               console.error("Error fetching transactions:", error);
@@ -175,60 +548,49 @@
             });
         }
 
-        function displayTransactions(data) {
-          // Display balance transactions
-          if (data.balanceTransactions && data.balanceTransactions.length > 0) {
-            let balanceHTML = '<div class="row">';
-            data.balanceTransactions.forEach((transaction) => {
-              balanceHTML += createBalanceTransactionCard(transaction);
-            });
-            balanceHTML += "</div>";
-            document.getElementById("balanceTransactions").innerHTML = balanceHTML;
-          } else {
-            document.getElementById("balanceTransactions").innerHTML = createEmptyState(
-              "No balance transactions found"
-            );
-          }
+        function updateStats(transactions, charges, payouts) {
+          // Update stats counters
+          totalChargesEl.textContent = charges.length;
+          totalPayoutsEl.textContent = payouts.length;
+          totalTransactionsEl.textContent = transactions.length;
 
-          // Display charges
-          if (data.charges && data.charges.length > 0) {
-            let chargesHTML = '<div class="row">';
-            data.charges.forEach((charge) => {
-              chargesHTML += createChargeCard(charge);
-            });
-            chargesHTML += "</div>";
-            document.getElementById("chargesTransactions").innerHTML = chargesHTML;
+          // Count unique customers
+          const uniqueCustomerIds = new Set();
+          const uniqueEmails = new Set();
 
-            // After rendering, fetch customer details for cards that need it
-            setTimeout(() => {
-              const chargeCards = document.querySelectorAll("#chargesTransactions .card[data-customer-id]");
-              chargeCards.forEach((card) => {
-                const customerId = card.getAttribute("data-customer-id");
-                if (customerId) {
-                  fetchCustomerDetails(customerId, card);
-                }
-              });
-            }, 100);
-          } else {
-            document.getElementById("chargesTransactions").innerHTML = createEmptyState("No charges found");
-          }
+          transactions.forEach((transaction) => {
+            // Try to get customer ID or email from different sources
+            if (transaction.customer) {
+              if (typeof transaction.customer === "string") {
+                uniqueCustomerIds.add(transaction.customer);
+              } else if (transaction.customer.id) {
+                uniqueCustomerIds.add(transaction.customer.id);
+              } else if (transaction.customer.customer && transaction.customer.customer.email) {
+                uniqueEmails.add(transaction.customer.customer.email);
+              }
+            }
 
-          // Display payouts
-          if (data.payouts && data.payouts.length > 0) {
-            let payoutsHTML = '<div class="row">';
-            data.payouts.forEach((payout) => {
-              payoutsHTML += createPayoutCard(payout);
-            });
-            payoutsHTML += "</div>";
-            document.getElementById("payoutsTransactions").innerHTML = payoutsHTML;
-          } else {
-            document.getElementById("payoutsTransactions").innerHTML = createEmptyState("No payouts found");
-          }
+            // Check for email in various places
+            if (transaction.receipt_email) {
+              uniqueEmails.add(transaction.receipt_email);
+            }
+
+            if (
+              transaction.source &&
+              typeof transaction.source === "object" &&
+              transaction.source.receipt_email
+            ) {
+              uniqueEmails.add(transaction.source.receipt_email);
+            }
+          });
+
+          const uniqueCount = uniqueCustomerIds.size + uniqueEmails.size;
+          uniqueCustomersEl.textContent = uniqueCount;
         }
 
         function createBalanceTransactionCard(transaction) {
-          const date = new Date(transaction.created * 1000).toLocaleString();
-          const amount = (transaction.amount / 100).toFixed(2);
+          const date = transaction.displayDate.toLocaleString();
+          const amount = transaction.displayAmount.toFixed(2);
           const currency = transaction.currency.toUpperCase();
 
           // Add classes for all transaction types
@@ -249,11 +611,9 @@
           if (transaction.status === "pending") statusClass = "warning";
           if (transaction.status === "canceled") statusClass = "danger";
 
-          // Check for source information that might contain email
-          let customerInfo = "";
+          // Try to extract customer email from various places
           let customerEmail = "";
 
-          // Try to extract customer email from various places
           if (transaction.source) {
             if (typeof transaction.source === "object") {
               // If source is expanded object
@@ -276,35 +636,337 @@
             }
           }
 
-          // If we found an email
-          if (customerEmail) {
-            customerInfo = `<strong>Customer:</strong> ${customerEmail}<br>`;
-          }
-
           return `
-          <div class="col-md-6 col-lg-4">
-            <div class="card transaction-card">
-              <div class="card-body">
-                <h5 class="card-title d-flex justify-content-between">
-                  ${amount} ${currency}
-                  <span class="badge bg-${typeClass}">${transaction.type}</span>
-                </h5>
-                <h6 class="card-subtitle mb-2 text-muted">ID: ${transaction.id}</h6>
-                <p class="card-text">
-                  <strong>Status:</strong> <span class="badge bg-${statusClass}">${transaction.status}</span><br>
-                  ${customerInfo}
-                  <strong>Description:</strong> ${transaction.description || "N/A"}<br>
-                  <strong>Available on:</strong> ${new Date(
-                    transaction.available_on * 1000
-                  ).toLocaleDateString()}
-                </p>
-                <div class="timestamp">
-                  Created: ${date}
+          <div class="transaction-card">
+            <div class="card-body">
+              <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="transaction-amount">${amount}</span>
+                  <span class="transaction-currency ms-1">${currency}</span>
                 </div>
+                <div>
+                  <span class="badge bg-${typeClass} badge-pill me-1">${transaction.type}</span>
+                  <span class="badge bg-${statusClass} badge-pill">${transaction.status}</span>
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">ID:</div>
+                <div class="info-value">${transaction.id.substring(0, 8)}...</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Description:</div>
+                <div class="info-value">${transaction.description || "N/A"}</div>
+              </div>
+
+              ${
+                customerEmail
+                  ? `
+              <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value">${customerEmail}</div>
+              </div>
+              `
+                  : ""
+              }
+
+              <div class="info-row">
+                <div class="info-label">Available:</div>
+                <div class="info-value">${new Date(
+                  transaction.available_on * 1000
+                ).toLocaleDateString()}</div>
+              </div>
+
+              <div class="timestamp">
+                <i class="far fa-clock me-1"></i> ${date}
               </div>
             </div>
           </div>
         `;
+        }
+
+        function createPayoutCard(payout) {
+          const date = payout.displayDate.toLocaleString();
+          const amount = payout.displayAmount.toFixed(2);
+          const currency = payout.currency.toUpperCase();
+
+          let statusClass = "secondary";
+          if (payout.status === "paid") statusClass = "success";
+          if (payout.status === "failed") statusClass = "danger";
+          if (payout.status === "pending") statusClass = "warning";
+          if (payout.status === "canceled") statusClass = "danger";
+          if (payout.status === "in_transit") statusClass = "info";
+
+          return `
+          <div class="transaction-card">
+            <div class="card-body">
+              <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="transaction-amount">${amount}</span>
+                  <span class="transaction-currency ms-1">${currency}</span>
+                </div>
+                <div>
+                  <span class="badge bg-primary badge-pill me-1">Payout</span>
+                  <span class="badge bg-${statusClass} badge-pill">${payout.status}</span>
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">ID:</div>
+                <div class="info-value">${payout.id.substring(0, 8)}...</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Method:</div>
+                <div class="info-value">
+                  <i class="fas fa-university me-1"></i> ${payout.method || "Standard"}
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Type:</div>
+                <div class="info-value">${payout.type || "Standard"}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Arrival:</div>
+                <div class="info-value">${new Date(payout.arrival_date * 1000).toLocaleDateString()}</div>
+              </div>
+
+              <div class="timestamp">
+                <i class="far fa-clock me-1"></i> ${date}
+              </div>
+            </div>
+          </div>
+        `;
+        }
+
+        function filterTransactions(filterType) {
+          // Reset pagination
+          currentPage = 1;
+
+          if (filterType === "all") {
+            filteredTransactions = [...allTransactions];
+          } else {
+            filteredTransactions = allTransactions.filter((transaction) => {
+              // Filter by transaction type
+              if (["charge", "payout", "refund", "payment"].includes(filterType)) {
+                if (transaction.transactionType === "charge" && transaction.type === filterType) {
+                  return true;
+                }
+                if (transaction.transactionType === "balance" && transaction.type === filterType) {
+                  return true;
+                }
+                if (filterType === "charge" && transaction.transactionType === "charge") {
+                  return true;
+                }
+                if (filterType === "payout" && transaction.transactionType === "payout") {
+                  return true;
+                }
+                return false;
+              }
+
+              // Filter by status
+              if (["succeeded", "pending", "failed"].includes(filterType)) {
+                return transaction.status === filterType;
+              }
+
+              return true;
+            });
+          }
+
+          // Apply any existing search filter
+          if (searchInput.value.trim()) {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            filteredTransactions = filteredTransactions.filter((transaction) => {
+              // Search by ID
+              if (transaction.id.toLowerCase().includes(searchTerm)) return true;
+
+              // Search by description
+              if (transaction.description && transaction.description.toLowerCase().includes(searchTerm))
+                return true;
+
+              // Search by amount
+              if (transaction.displayAmount.toString().includes(searchTerm)) return true;
+
+              // Search by email
+              if (
+                transaction.customer &&
+                transaction.customer.customer &&
+                transaction.customer.customer.email &&
+                transaction.customer.customer.email.toLowerCase().includes(searchTerm)
+              )
+                return true;
+
+              // Search by receipt email
+              if (transaction.receipt_email && transaction.receipt_email.toLowerCase().includes(searchTerm))
+                return true;
+
+              return false;
+            });
+          }
+
+          // Display transactions
+          displayTransactions();
+          updatePagination();
+        }
+
+        function handleSearch() {
+          // Get active filter
+          const activeFilter = document.querySelector(".filter-button.active").dataset.filter;
+
+          // Apply the active filter again (which will also apply the search term)
+          filterTransactions(activeFilter);
+        }
+
+        function displayTransactions() {
+          if (filteredTransactions.length === 0) {
+            transactionsContainer.innerHTML = createEmptyState(
+              "No transactions found matching your criteria"
+            );
+            paginationContainer.classList.add("d-none");
+            return;
+          }
+
+          // Calculate pagination
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = startIndex + itemsPerPage;
+          const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+          // Create HTML for all transactions
+          let transactionsHTML = '<div class="transactions-container">';
+
+          paginatedTransactions.forEach((transaction) => {
+            if (transaction.transactionType === "charge") {
+              transactionsHTML += createChargeCard(transaction);
+            } else if (transaction.transactionType === "payout") {
+              transactionsHTML += createPayoutCard(transaction);
+            } else if (transaction.transactionType === "balance") {
+              transactionsHTML += createBalanceTransactionCard(transaction);
+            }
+          });
+
+          transactionsHTML += "</div>";
+          transactionsContainer.innerHTML = transactionsHTML;
+
+          // Show pagination if needed
+          if (filteredTransactions.length > itemsPerPage) {
+            paginationContainer.classList.remove("d-none");
+          } else {
+            paginationContainer.classList.add("d-none");
+          }
+
+          // After rendering, fetch customer details for cards that need it
+          setTimeout(() => {
+            const chargeCards = document.querySelectorAll(".transaction-card[data-customer-id]");
+            chargeCards.forEach((card) => {
+              const customerId = card.getAttribute("data-customer-id");
+              if (customerId) {
+                fetchCustomerDetails(customerId, card);
+              }
+            });
+          }, 100);
+        }
+
+        function updatePagination() {
+          if (filteredTransactions.length <= itemsPerPage) {
+            paginationContainer.classList.add("d-none");
+            return;
+          }
+
+          const pageCount = Math.ceil(filteredTransactions.length / itemsPerPage);
+          let paginationHTML = "";
+
+          // Previous button
+          paginationHTML += `
+          <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}" ${
+            currentPage === 1 ? 'aria-disabled="true"' : ""
+          }>
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        `;
+
+          // Page numbers
+          const maxVisiblePages = 5;
+          let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+          let endPage = Math.min(pageCount, startPage + maxVisiblePages - 1);
+
+          if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+          }
+
+          if (startPage > 1) {
+            paginationHTML += `
+            <li class="page-item">
+              <a class="page-link" href="#" data-page="1">1</a>
+            </li>
+          `;
+
+            if (startPage > 2) {
+              paginationHTML += `
+              <li class="page-item disabled">
+                <a class="page-link" href="#">...</a>
+              </li>
+            `;
+            }
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+            <li class="page-item ${i === currentPage ? "active" : ""}">
+              <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+          `;
+          }
+
+          if (endPage < pageCount) {
+            if (endPage < pageCount - 1) {
+              paginationHTML += `
+              <li class="page-item disabled">
+                <a class="page-link" href="#">...</a>
+              </li>
+            `;
+            }
+
+            paginationHTML += `
+            <li class="page-item">
+              <a class="page-link" href="#" data-page="${pageCount}">${pageCount}</a>
+            </li>
+          `;
+          }
+
+          // Next button
+          paginationHTML += `
+          <li class="page-item ${currentPage === pageCount ? "disabled" : ""}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}" ${
+            currentPage === pageCount ? 'aria-disabled="true"' : ""
+          }>
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        `;
+
+          pagination.innerHTML = paginationHTML;
+          paginationContainer.classList.remove("d-none");
+
+          // Add event listeners to pagination links
+          const pageLinks = pagination.querySelectorAll(".page-link[data-page]");
+          pageLinks.forEach((link) => {
+            link.addEventListener("click", function (e) {
+              e.preventDefault();
+              const page = parseInt(this.dataset.page);
+              if (page && page !== currentPage) {
+                currentPage = page;
+                displayTransactions();
+                updatePagination();
+                // Scroll to top of transactions
+                transactionsContainer.scrollIntoView({ behavior: "smooth" });
+              }
+            });
+          });
         }
 
         // Fetch customer details if needed
@@ -326,8 +988,8 @@
         }
 
         function createChargeCard(charge) {
-          const date = new Date(charge.created * 1000).toLocaleString();
-          const amount = (charge.amount / 100).toFixed(2);
+          const date = charge.displayDate.toLocaleString();
+          const amount = charge.displayAmount.toFixed(2);
           const currency = charge.currency.toUpperCase();
 
           // Enhanced status class handling to include all possible statuses
@@ -342,7 +1004,6 @@
           if (charge.status === "disputed") statusClass = "danger";
 
           // Customer information
-          let customerInfo = "";
           let customerEmail = "Unknown";
 
           if (charge.customer) {
@@ -374,40 +1035,71 @@
             }
           }
 
-          const cardHTML = `
-          <div class="col-md-6 col-lg-4">
-            <div class="card transaction-card" data-customer-id="${
-              typeof charge.customer === "string" ? charge.customer : ""
-            }">
-              <div class="card-body">
-                <h5 class="card-title d-flex justify-content-between">
-                  ${amount} ${currency}
-                  <span class="badge bg-${statusClass}">${charge.status}</span>
-                </h5>
-                <h6 class="card-subtitle mb-2 text-muted">ID: ${charge.id}</h6>
-                <p class="card-text">
-                  <strong>Payment Method:</strong> ${paymentMethodDetails}<br>
-                  <strong>Description:</strong> ${charge.description || "N/A"}<br>
-                  <div class="${customerEmail === "Unknown" ? "d-none" : ""}">
-                    <strong>Customer Email:</strong> <span class="customer-email">${customerEmail}</span><br>
-                  </div>
-                  <strong>Receipt:</strong> ${
+          // Determine icon based on payment method
+          let paymentIcon = "credit-card";
+          if (charge.payment_method_details) {
+            if (charge.payment_method_details.type === "card") paymentIcon = "credit-card";
+            if (charge.payment_method_details.type === "bank_transfer") paymentIcon = "university";
+            if (charge.payment_method_details.type === "ach_debit") paymentIcon = "university";
+            if (charge.payment_method_details.type === "sepa_debit") paymentIcon = "university";
+            if (charge.payment_method_details.type === "ideal") paymentIcon = "money-bill-alt";
+            if (charge.payment_method_details.type === "sofort") paymentIcon = "money-bill-alt";
+            if (charge.payment_method_details.type === "giropay") paymentIcon = "money-bill-alt";
+          }
+
+          return `
+          <div class="transaction-card" data-customer-id="${
+            typeof charge.customer === "string" ? charge.customer : ""
+          }">
+            <div class="card-body">
+              <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="transaction-amount">${amount}</span>
+                  <span class="transaction-currency ms-1">${currency}</span>
+                </div>
+                <span class="badge bg-${statusClass} badge-pill">${charge.status}</span>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">ID:</div>
+                <div class="info-value">${charge.id.substring(0, 8)}...</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Payment:</div>
+                <div class="info-value">
+                  <i class="fas fa-${paymentIcon} me-1"></i> ${paymentMethodDetails}
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Description:</div>
+                <div class="info-value">${charge.description || "N/A"}</div>
+              </div>
+
+              <div class="info-row ${customerEmail === "Unknown" ? "d-none" : ""}">
+                <div class="info-label">Email:</div>
+                <div class="info-value customer-email">${customerEmail}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Receipt:</div>
+                <div class="info-value">
+                  ${
                     charge.receipt_url
                       ? '<a href="' + charge.receipt_url + '" target="_blank">View Receipt</a>'
                       : "N/A"
                   }
-                </p>
-                <div class="timestamp">
-                  Created: ${date}
                 </div>
+              </div>
+
+              <div class="timestamp">
+                <i class="far fa-clock me-1"></i> ${date}
               </div>
             </div>
           </div>
         `;
-
-          return cardHTML;
         }
-
         function createPayoutCard(payout) {
           const date = new Date(payout.created * 1000).toLocaleString();
           const amount = (payout.amount / 100).toFixed(2);
@@ -440,7 +1132,6 @@
           </div>
         `;
         }
-
         function createLoadingHTML(message) {
           return `
           <div class="loading">
@@ -472,7 +1163,6 @@
             <p class="mb-0">Please check your API keys and try again.</p>
           </div>
         `;
-
           document.getElementById("balanceTransactions").innerHTML = errorHTML;
           document.getElementById("chargesTransactions").innerHTML = errorHTML;
           document.getElementById("payoutsTransactions").innerHTML = errorHTML;
